@@ -15,7 +15,7 @@ from connconst import *
 
 # %%
 '''
-Seems to also have an alpha(opacity) channel, ignoring for now
+PNG seems to also have an alpha(opacity) channel, ignoring for now
 0.5 threshold is 128 for integer
 '''
 def img_toBW(filename, thresh: float | int = 0.5):
