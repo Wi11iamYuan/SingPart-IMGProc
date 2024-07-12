@@ -8,7 +8,7 @@ import multiprocessing
 import threading
 import imageio.v3 as iio
 
-from connconst import *
+from conncomp_const import *
 
 #%%
 # regions = regionprops()
@@ -68,6 +68,8 @@ def acc_conncomp_flood3d(BW, TRACK, M, idxList, x, y, z):
 
 #%%
 #Supports 2D and 3D binary images
+#Width x Height x Depth
+#X x Y x Z
 def acc_conncomp(BW = None, conn: int | None = None):
     BW = np.asarray(BW)
     TRACK = np.zeros(BW.shape, dtype=int)
@@ -117,10 +119,6 @@ def acc_conncomp(BW = None, conn: int | None = None):
     }
                 
     return CC
-
-def acc_regionprops():
-    pass
-
     
 # %%
 BW2d = [
@@ -184,7 +182,7 @@ BW3d = [
 # print(CC["NumObjects"])
 # print(CC["PixelIdxList"])
 
-TEST_BW = img_toBW("test.png")
+TEST_BW = img_toBW("./imgs/test.png")
 CC = acc_conncomp(TEST_BW, 8)
 print(CC["Connectivity"])
 print(CC["ImageSize"])
