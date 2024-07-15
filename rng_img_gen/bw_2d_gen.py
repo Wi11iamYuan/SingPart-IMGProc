@@ -1,7 +1,7 @@
 import numpy as np
 import random
 import matplotlib.pyplot as plt
-from conncomp_const import *
+from ..constants import *
 
 def create_binary_image_with_components(width:int=150, height:int=150, max_comp:int=5, max_comp_pix:int=500, max_attempts=100, conn = conn4):
     image = np.zeros((width, height), dtype=int)
@@ -30,7 +30,10 @@ def grow_component(image, x, y, component_label, max_pixels, conn):
             neighbors = [(x + dx, y + dy, dz) for dx, dy, dz in conn]
             
             random.shuffle(neighbors)
-            stack.extend(neighbors)
+            for neighbor in neighbors:
+                if random.randint(1, 10) <= 7:
+                    stack.append(neighbor) 
+
 
 def get_component_indices(image, max_comp:int=5):
     components = {}

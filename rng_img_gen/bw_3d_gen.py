@@ -2,7 +2,7 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 import pyvista as pv
-from conncomp_const import *
+from constants import *
 
 def create_binary_image_with_components(width:int=150, height:int=150, depth:int=150, max_comp:int=5, max_comp_pix:int=500, max_attempts=100, conn = conn6):
     image = np.zeros((width, height, depth), dtype=int)
@@ -31,7 +31,9 @@ def grow_component(image, x, y, z, component_label, max_pixels, conn):
             neighbors = [(x + dx, y + dy, z + dz) for dx, dy, dz in conn]
             
             random.shuffle(neighbors)
-            stack.extend(neighbors)
+            for neighbor in neighbors:
+                if random.randint(1, 10) <= 7:
+                    stack.append(neighbor) 
 
 def get_component_indices(image, max_comp:int=5):
     components = {}
