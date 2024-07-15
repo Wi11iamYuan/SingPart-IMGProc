@@ -32,7 +32,7 @@ def grow_component(image, x, y, z, component_label, max_pixels, conn):
             
             random.shuffle(neighbors)
             for neighbor in neighbors:
-                if random.randint(1, 10) <= 7:
+                if random.randint(1, 10) <= 6:
                     stack.append(neighbor) 
 
 def get_component_indices(image, max_comp:int=5):
