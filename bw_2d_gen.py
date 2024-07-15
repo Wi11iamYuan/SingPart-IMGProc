@@ -1,7 +1,7 @@
 import numpy as np
 import random
 import matplotlib.pyplot as plt
-from ..constants import *
+from .constants import *
 
 def create_binary_image_with_components(width:int=150, height:int=150, max_comp:int=5, max_comp_pix:int=500, max_attempts=100, conn = conn4):
     image = np.zeros((width, height), dtype=int)
