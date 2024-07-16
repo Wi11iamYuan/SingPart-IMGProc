@@ -123,9 +123,9 @@ def main():
         print("test")
         print(test_3d_indices[i])
 
-    plt = pv.Plotter()
-    plt.add_volume(test_3d, cmap="viridis")
-    plt.show()
+    # plt = pv.Plotter()
+    # plt.add_volume(test_3d, cmap="viridis")
+    # plt.show()
 
     return 0
 

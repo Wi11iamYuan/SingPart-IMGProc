@@ -52,7 +52,7 @@ def get_component_indices(image, max_comp:int=5):
     for i in range(1, max_comp + 1):
         component_indices = np.where(image == i)
         if len(component_indices[0]) > 0:
-            components.append(sorted(list(component_indices[0] * image.shape[1] * image.shape[2] + component_indices[1] * image.shape[2])))
+            components.append(sorted(list(component_indices[0] * image.shape[1] * image.shape[2] + component_indices[1] * image.shape[2] + component_indices[2])))
     
     components = sorted(components, key=lambda item: (item[0]))
     return components
@@ -67,19 +67,15 @@ def gen_RNG_3dBW(x,y,z,max_comp,max_comp_pix,max_attempts,conn):
 
 
 def main():
-    # Create the image
-    image = create_binary_image_with_components(150,150,150,13,5000,1000,conn26)
-
-    # Get indices for each component
-    component_indices = get_component_indices(image, 13)
+    image, component_indices = gen_RNG_3dBW(50, 50, 50, 5, 25, 50, conn26)
 
     # Print the indices for each component
     for i in range(len(component_indices)):
         print(f"Component {i+1}: {component_indices[i]}")
 
-    plt = pv.Plotter()
-    plt.add_volume(image, cmap="viridis")
-    plt.show()
+    # plt = pv.Plotter()
+    # plt.add_volume(image, cmap="viridis")
+    # plt.show()
 
     return 0
 
