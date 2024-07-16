@@ -9,11 +9,11 @@ Ignore PNG alpha channel
 
 Sort components based on smallest index
 
-TODO: Make bwconncomp iterative
-TODO: Sort components without needing to run sorted()
-TODO: Combine 2d and 3d functions
 """
 
+import numpy as np
+import matplotlib.pyplot as plt
+import pyvista as pv
 
 conn4 = [
     [0, 1, 0],   # Up
@@ -302,6 +302,31 @@ class BWTest():
     @staticmethod
     def get_conn26_test(idx):
         return BWTest.conn26_tests[idx]
+
+
+class Tester():
+
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def test_bwconncomp_match(CC, image, component_indices):
+        print(f"Objects detected: {CC['NumObjects']}")
+
+        for i in range(0, CC["NumObjects"]):
+            print(f"Component {i+1} Matches") if CC['PixelIdxList'][i] == component_indices[i] else print(f"Component {i+1} Does Not Match")
+            print("bwconncomp")
+            print(CC['PixelIdxList'][i])
+            print("test")
+            print(component_indices[i])
+
+        if len(CC['ImageSize']) == 3:
+            vol_img = np.array(image)
+            vol = pv.Plotter()
+            vol.add_volume(vol_img, cmap="viridis")
+            vol.show()
+        else:
+            plt.imshow(image)
 
 
 
