@@ -3,17 +3,18 @@ import numpy as np
 
 import multiprocessing
 import threading
-import imageio.v3 as iio
 
+import matplotlib.pyplot as plt
+import pyvista as pv
 from constants import *
+
+import sys
+
 from img_conversion import img_toBW
+from bw_2d_gen import gen_RNG_2dBW
+from bw_3d_gen import gen_RNG_3dBW
 
 #%%
-'''
-Consider doing this but iteratively for larger images
-Consider sorting the components like bwconncomp
-Consider combining the two functions somehow
-'''
 def bwconncomp_flood2d(BW, TRACK, M, idxList, x, y):
     if x < 0 or x >= BW.shape[0] or y < 0 or y >= BW.shape[1] or BW[x, y] == 0 or TRACK[x, y] == 1:
         return
@@ -65,7 +66,7 @@ def bwconncomp(BW = None, conn: int | None = None):
     if BW.ndim == 2:
         for i in range(BW.shape[0]):
             for j in range(BW.shape[1]):
-                if BW[i, j] == 1 and TRACK[i, j] == 0:
+                if BW[i, j] > 0 and TRACK[i, j] == 0:
                     numObjects += 1
                     idxList = []
                     bwconncomp_flood2d(BW, TRACK, M, idxList, i, j)
@@ -74,11 +75,13 @@ def bwconncomp(BW = None, conn: int | None = None):
         for i in range(BW.shape[0]):
             for j in range(BW.shape[1]):
                 for k in range(BW.shape[2]):
-                    if BW[i, j, k] == 1 and TRACK[i, j, k] == 0:
+                    if BW[i, j, k] > 0 and TRACK[i, j, k] == 0:
                         numObjects += 1
                         idxList = []
                         bwconncomp_flood3d(BW, TRACK, M, idxList, i, j, k)
                         pixelIdxList.append(idxList)
+
+    pixelIdxList = [sorted(x) for x in pixelIdxList]
 
     CC = {
         'Connectivity': connectivity,
@@ -90,74 +93,47 @@ def bwconncomp(BW = None, conn: int | None = None):
     return CC
     
 # %%
-BW2d = [
-   [0, 0, 1, 1, 1, 0, 0, 0, 0, 0],
-   [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-   [0, 1, 1, 0, 1, 0, 1, 1, 1, 0],
-   [0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
-   [0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-   [1, 0, 0, 1, 1, 1, 0, 1, 0, 0],
-   [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-   [0, 0, 0, 0, 0, 1, 0, 1, 0, 0],
-   [0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-   [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
-]
+def main():
 
-BW2d_bool = [
-   [bool(x) for x in row] for row in BW2d
-]
+    # test_2d, test_2d_indices = gen_RNG_2dBW(50, 50, 5, 25, 50, conn4)
 
-BW3d = [
-    [
-        [1, 0, 1, 0, 0, 1],
-        [0, 0, 1, 1, 0, 0],
-        [0, 0, 0, 0, 1, 1],
-        [1, 0, 1, 1, 0, 0],
-        [1, 0, 0, 1, 0, 1]
-    ],
-    [
-        [0, 0, 0, 0, 0, 0],
-        [0, 0, 1, 1, 1, 1],
-        [1, 0, 1, 1, 0, 0],
-        [0, 0, 0, 0, 1, 0],
-        [1, 0, 0, 1, 1, 0]
-    ],
-    [
-        [0, 1, 1, 1, 0, 0],
-        [0, 1, 1, 1, 0, 1],
-        [1, 1, 1, 1, 1, 0],
-        [1, 0, 1, 0, 0, 0],
-        [1, 0, 1, 0, 1, 0]
-    ],
-    [
-        [0, 1, 1, 1, 1, 1],
-        [1, 1, 1, 0, 1, 0],
-        [0, 1, 0, 0, 1, 0],
-        [0, 0, 0, 1, 0, 1],
-        [1, 0, 1, 0, 1, 0]
-    ]
-]
+    # CC = bwconncomp(test_2d, 4)
 
-# CC = bwconncomp(BW2d_bool, 8)
-# print(CC["Connectivity"])
-# print(CC["ImageSize"])
-# print(CC["NumObjects"])
-# print(CC["PixelIdxList"])
+    # plt.imshow(test_2d)
 
-# CC = bwconncomp(BW3d, 18)
-# print(CC["Connectivity"])
-# print(CC["ImageSize"])
-# print(CC["NumObjects"])
-# print(CC["PixelIdxList"])
+    # print(f"Objects detected: {CC['NumObjects']}")
 
-TEST_BW = img_toBW("./imgs/test.png")
-CC = bwconncomp(TEST_BW, 8)
-print(CC["Connectivity"])
-print(CC["ImageSize"])
-print(CC["NumObjects"])
-print(CC["PixelIdxList"])
-# %%
-for i in CC["PixelIdxList"]:
-    print(i[0])
+    # for i in range(0, CC["NumObjects"]):
+    #     print(f"Component {i+1} Matches") if CC['PixelIdxList'][i] == test_2d_indices[i] else print(f"Component {i+1} Does Not Match")
+    #     print("bwconncomp")
+    #     print(CC['PixelIdxList'][i])
+    #     print("test")
+    #     print(test_3d_indices[i])
+
+    test_3d, test_3d_indices = gen_RNG_3dBW(50, 50, 50, 5, 25, 50, conn6)
+
+    CC = bwconncomp(test_3d, 6)
+
+    print(f"Objects detected: {CC['NumObjects']}")
+
+    for i in range(0, CC["NumObjects"]):
+        print(f"Component {i+1} Matches") if CC['PixelIdxList'][i] == test_3d_indices[i] else print(f"Component {i+1} Does Not Match")
+        print("bwconncomp")
+        print(CC['PixelIdxList'][i])
+        print("test")
+        print(test_3d_indices[i])
+
+    plt = pv.Plotter()
+    plt.add_volume(test_3d, cmap="viridis")
+    plt.show()
+
+    return 0
+
+if __name__ == '__main__':
+    if hasattr(sys, 'ps1'):  # Check if in interactive mode
+        main()
+    else:
+        sys.exit(main())
+
+
 # %%

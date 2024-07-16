@@ -1,6 +1,8 @@
 import numpy as np
 import imageio.v3 as iio
 
+import sys
+
 def img_toBW(filename, thresh: float | int = 0.5):
     """
     Converts an image to a binary image based on a threshold value.
@@ -25,3 +27,13 @@ def img_toBW(filename, thresh: float | int = 0.5):
                 BW[i, j] = luminocity > (thresh * 255) if isinstance(thresh, float) else thresh
 
     return BW
+
+def main():
+    # Create the image
+    filename = "image.png"
+    BW = img_toBW(filename)
+
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())

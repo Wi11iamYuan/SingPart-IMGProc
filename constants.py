@@ -7,10 +7,11 @@ X x Y x Z
 Ignore PNG alpha channel
 0.5 threshold = 128 int
 
-Sort components based on top-left extremum with row-major order
-1. Highest z (for 3D)
-2. Highest y
-3. Lowest x
+Sort components based on smallest index
+
+TODO: Make bwconncomp iterative
+TODO: Combine 2d and 3d functions
+TODO: Sort components without needing to run sorted()
 """
 
 
@@ -90,3 +91,20 @@ conn26 = [
     [0, -1, -1],  # Bottom-front
     [1, -1, -1]   # Bottom-front-right
 ]
+
+class BWTest():
+
+    def __init__(self):
+        pass
+
+    conn4_test1_BW = [
+
+    
+    ]
+
+    @staticmethod
+    def get_conn4_test(idx):
+        pass
+
+        
+
