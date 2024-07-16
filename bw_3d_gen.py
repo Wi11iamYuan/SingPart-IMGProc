@@ -67,16 +67,18 @@ def gen_RNG_3dBW(x,y,z,max_comp,max_comp_pix,max_attempts,conn):
 
 
 def main():
-    image, component_indices = gen_RNG_3dBW(50, 50, 50, 5, 25, 50, conn26)
+    image, component_indices = gen_RNG_3dBW(5, 6, 5, 6, 17, 50, conn26)
 
     # Print the indices for each component
-    for i in range(len(component_indices)):
-        print(f"Component {i+1}: {component_indices[i]}")
+    # for i in range(len(component_indices)):
+    #     print(f"Component {i+1}: {component_indices[i]}")
 
     # plt = pv.Plotter()
     # plt.add_volume(image, cmap="viridis")
     # plt.show()
 
+    print(image)
+    print(component_indices)
     return 0
 
 if __name__ == '__main__':

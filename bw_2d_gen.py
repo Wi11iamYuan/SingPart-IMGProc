@@ -67,18 +67,16 @@ def gen_RNG_2dBW(x,y,max_comp,max_comp_pix,max_attempts,conn):
 
 
 def main():
-    # Create the image
-    image = create_binary_image_with_components(150,150,13,500,1000,conn4)
-
-    # Get indices for each component
-    component_indices = get_component_indices(image, 13)
+    image, component_indices = gen_RNG_2dBW(4, 13, 8, 24, 50, conn8)
 
     # Print the indices for each component
-    for i in range(len(component_indices)):
-        print(f"Component {i+1}: {component_indices[i]}")
+    # for i in range(len(component_indices)):
+    #     print(f"Component {i+1}: {component_indices[i]}")
 
     # Display the image
-    plt.imshow(image)
+    # plt.imshow(image)
+    print(image)
+    print(component_indices)
 
     return 0
 
