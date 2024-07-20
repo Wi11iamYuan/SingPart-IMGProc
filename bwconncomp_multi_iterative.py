@@ -1,6 +1,6 @@
 #%%
 import numpy as np
-from math import ceil
+from math import ceil, floor
 import sys
 
 import multiprocessing
@@ -19,13 +19,22 @@ def generate_2d_blocks(BW, cores):
     width = BW.shape[0]
     height = BW.shape[1]
 
-    #calculates the optimal number of blocks in the x and y directions
-    blocks_y = ceil(np.sqrt(cores * height / width))
-    blocks_x = ceil(cores / blocks_y)
-
-    #calculates the size of each block
-    block_width = width // blocks_x
-    block_height = height // blocks_y
+    aspect_ratio = width / height
+    
+    # Calculate blocks_x and blocks_y
+    blocks_x = ceil(np.sqrt(cores * aspect_ratio))
+    blocks_y = floor(cores / blocks_x)
+    
+    # Adjust if the total is less than cores
+    while blocks_x * blocks_y < cores:
+        if aspect_ratio > 1:
+            blocks_x += 1
+        else:
+            blocks_y += 1
+    
+    # Calculate block sizes
+    block_width = ceil(width / blocks_x)
+    block_height = ceil(height / blocks_y)
 
     #note the remainder pixels
     remainder_x = width % blocks_x
@@ -33,6 +42,7 @@ def generate_2d_blocks(BW, cores):
 
     blocks = []
 
+    current_label = 1
     x_start = 0
     for i in range(blocks_x):
         # Adjust block width if there are remainder pixels to distribute
@@ -48,11 +58,13 @@ def generate_2d_blocks(BW, cores):
                 'coord_start': (x_start, y_start),
                 'coord_end': (x_start + current_width, 
                               y_start + current_height),
-                'label_range': (),
+                'label_range': (current_label, current_label + current_width * current_height-1),
             }
             blocks.append(block)
             
             y_start += current_height
+
+            current_label += current_width * current_height
         
         x_start += current_width
     
@@ -168,13 +180,13 @@ def main():
     # Tester.test_bwconncomp_match(CC, image, component_indices)
 
     # Example usage:
-    image = np.zeros((1000, 1500))  # Example image of size 1000x1500
+    image = np.zeros((1456, 1520))  # Example image of size 1000x1500
     blocks = generate_2d_blocks(image, cores=16)
 
     # Print block information
     for i, block in enumerate(blocks):
-        print(f"Block {i}: From ({block['x_start']}, {block['y_start']}) "
-            f"to ({block['x_end']}, {block['y_end']})")
+        print(f"Block {i}: From ({block['coord_start']} "
+            f"to ({block['coord_end']}), wit hrange {block['label_range']}")
 
     return 0
 
