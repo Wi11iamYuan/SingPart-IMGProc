@@ -1,9 +1,6 @@
 #%%
 import numpy as np
 
-import multiprocessing
-import threading
-
 import matplotlib.pyplot as plt
 import pyvista as pv
 from constants import *
@@ -46,7 +43,7 @@ def bwconncomp_flood3d(BW, TRACK, M, idxList, x, y, z):
         bwconncomp_flood3d(BW, TRACK, M, idxList, nx, ny, nz)
 
 #%%
-def bwconncomp(BW = None, conn: int | None = None):
+def bwconncomp_recursive(BW = None, conn: int | None = None):
     #turns BW into a numpy array, then creates an empty track for the recursion later
     BW = np.asarray(BW)
     TRACK = np.zeros(BW.shape, dtype=int)
@@ -118,7 +115,7 @@ def main():
 
     image, component_indices = BWTest.get_conn26_test(0)
 
-    CC = bwconncomp(image, 26)
+    CC = bwconncomp_recursive(image, 26)
 
     Tester.test_bwconncomp_match(CC, image, component_indices)
 

@@ -14,6 +14,8 @@ Sort components based on smallest index
 import numpy as np
 import matplotlib.pyplot as plt
 import pyvista as pv
+import time
+
 
 conn4 = [
     [0, 1, 0],   # Up
@@ -327,6 +329,14 @@ class Tester():
             vol.show()
         else:
             plt.imshow(image)
+
+    @staticmethod
+    def test_bwconncomp_time(BW, conn, method):
+        start = time.time()
+        CC = method(BW, conn)
+        end = time.time()
+        print(f"Time taken: {end-start} seconds")
+        return CC
 
 
 
