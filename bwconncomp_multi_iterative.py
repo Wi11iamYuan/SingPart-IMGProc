@@ -1,6 +1,6 @@
 #%%
 import numpy as np
-from math import ceil, floor
+import math
 import sys
 
 import multiprocessing
@@ -19,22 +19,22 @@ def generate_2d_blocks(BW, cores):
     width = BW.shape[0]
     height = BW.shape[1]
 
-    aspect_ratio = width / height
-    
-    # Calculate blocks_x and blocks_y
-    blocks_x = ceil(np.sqrt(cores * aspect_ratio))
-    blocks_y = floor(cores / blocks_x)
-    
-    # Adjust if the total is less than cores
-    while blocks_x * blocks_y < cores:
-        if aspect_ratio > 1:
-            blocks_x += 1
+    blocks_x = 1
+    blocks_y = 1
+
+    power = (int)(math.log2(cores))
+    x_turn = True
+
+    for i in range(power):
+        if x_turn:
+            blocks_x *= 2
         else:
-            blocks_y += 1
+            blocks_y *= 2
+        x_turn = not x_turn
     
     # Calculate block sizes
-    block_width = ceil(width / blocks_x)
-    block_height = ceil(height / blocks_y)
+    block_width = width // blocks_x
+    block_height = height // blocks_y
 
     #note the remainder pixels
     remainder_x = width % blocks_x
@@ -43,15 +43,15 @@ def generate_2d_blocks(BW, cores):
     blocks = []
 
     current_label = 1
-    x_start = 0
-    for i in range(blocks_x):
-        # Adjust block width if there are remainder pixels to distribute
-        current_width = block_width + (1 if i < remainder_x else 0)
-        y_start = 0
+    y_start = 0
+    for i in range(blocks_y):
+        # Adjust block height if there are remainder pixels to distribute
+        current_height = block_height + (1 if i < remainder_y else 0)
+        x_start = 0
         
-        for j in range(blocks_y):
-            # Adjust block height if there are remainder pixels to distribute
-            current_height = block_height + (1 if j < remainder_y else 0)
+        for j in range(blocks_x):
+            # Adjust block width if there are remainder pixels to distribute
+            current_width = block_width + (1 if j < remainder_x else 0)
             
             # Create a block with its coordinates and size
             block = {
@@ -62,78 +62,27 @@ def generate_2d_blocks(BW, cores):
             }
             blocks.append(block)
             
-            y_start += current_height
+            x_start += current_width
 
             current_label += current_width * current_height
         
-        x_start += current_width
+        y_start += current_height
     
     return blocks
 
-def generate_3d_blocks(BW, cores):
-    width = BW.shape[0]
-    height = BW.shape[1]
-    depth = BW.shape[2]
-
-    # Calculate the ratios
-    ratio_yx = height / width
-    ratio_zx = depth / width
-
-    # Calculate the number of blocks in each dimension
-    blocks_x = ceil((cores / (ratio_yx * ratio_zx)) ** (1/3))
-    blocks_y = ceil(blocks_x * ratio_yx)
-    blocks_z = ceil(blocks_x * ratio_zx)
-
-    # Calculate the size of each block
-    block_width = width // blocks_x
-    block_height = height // blocks_y
-    block_depth = depth // blocks_z
-
-    # Note the remainder pixels
-    remainder_x = width % blocks_x
-    remainder_y = height % blocks_y
-    remainder_z = depth % blocks_z
-
-    blocks = []
-
-    x_start = 0
-    for i in range(blocks_x):
-        # Adjust block width if there are remainder pixels to distribute
-        current_width = block_width + (1 if i < remainder_x else 0)
-        y_start = 0
-        
-        for j in range(blocks_y):
-            # Adjust block height if there are remainder pixels to distribute
-            current_height = block_height + (1 if j < remainder_y else 0)
-            z_start = 0
-
-            for k in range(blocks_z):
-                # Adjust block depth if there are remainder pixels to distribute
-                current_depth = block_depth + (1 if k < remainder_z else 0)
-            
-                # Create a block with its coordinates and size
-                block = {
-                    'coord_start': (x_start, y_start, z_start),
-                    'coord_end': (x_start + current_width, 
-                                  y_start + current_height, 
-                                  z_start + current_depth),
-                    'label_range': (),
-                }
-                blocks.append(block)
-
-                z_start += current_depth
-            
-            y_start += current_height
-        
-        x_start += current_width
-
-    return blocks
-
-
 #%%
 def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None = None):
-    #turns BW into a numpy array, then creates an empty track for the recursion later
+    """
+    Accepts # cores that are a power of 2
+    """
+
+    if not ((cores & (cores-1) == 0) and cores > 0):
+        raise ValueError("Number of cores must be a power of 2")
+    
+    #turns BW into a numpy array
     BW = np.asarray(BW)
+
+    blocks = []
 
     #checks if the image is 2D or 3D, then assigns the correct connectivity
     M = None
@@ -142,6 +91,7 @@ def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None =
             M = conn4
         else: # conn = 8
             M = conn8
+        blocks = generate_2d_blocks(BW, cores)
     else: # BW.ndim == 3
         if conn == 6:
             M = conn6
@@ -179,14 +129,13 @@ def main():
 
     # Tester.test_bwconncomp_match(CC, image, component_indices)
 
-    # Example usage:
-    image = np.zeros((1456, 1520))  # Example image of size 1000x1500
+    image = np.zeros((2048, 2048))
     blocks = generate_2d_blocks(image, cores=16)
 
     # Print block information
     for i, block in enumerate(blocks):
         print(f"Block {i}: From ({block['coord_start']} "
-            f"to ({block['coord_end']}), wit hrange {block['label_range']}")
+            f"to ({block['coord_end']}), with range {block['label_range']}")
 
     return 0
 
