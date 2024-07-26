@@ -56,9 +56,9 @@ def generate_2d_blocks(BW, cores):
             # Create a block with its coordinates and size
             block = {
                 'coord_start': (x_start, y_start),
-                'coord_end': (x_start + current_width, 
-                              y_start + current_height),
-                'label_range': (current_label, current_label + current_width * current_height-1),
+                'coord_end': (x_start + current_width -1, 
+                              y_start + current_height -1),
+                'label_range': (current_label, current_label + current_width * current_height -1),
             }
             blocks.append(block)
             
@@ -70,10 +70,63 @@ def generate_2d_blocks(BW, cores):
     
     return blocks
 
+def label_2d_blocks(BW, block, conn):
+    x_start, y_start = block['coord_start']
+    x_end, y_end = block['coord_end']
+
+    labels = np.zeros(shape=(x_end-x_start +1, y_end-y_start +1))
+    
+    start_label = block['label_range'][0]
+    next_label = block['label_range'][0]
+
+    equivalences = {}
+
+    #FIRST PASS
+    for x in range(x_start, x_end +1):
+        for y in range(y_start, y_end +1):
+
+            if BW[x, y] == 0:
+                continue
+
+            neighbors = []
+            for dx, dy in conn:
+                nx, ny = x + dx, y + dy
+
+                if x_start <= nx <= x_end and y_start <= ny <= y_end:
+                    neighbors.append(labels[nx-x_start, ny-y_start])
+
+            if not neighbors or all(n==0 for n in neighbors):
+                labels[x-x_start, y-y_start] = next_label
+                next_label += 1
+            else:
+                min_label = min(n for n in neighbors if n != 0)
+                labels[x-x_start, y-y_start] = min_label
+                for n in neighbors:
+                    if n != 0 and n != min_label:
+                        equivalences[n] = min_label
+
+    #RESOLVE EQUIVALENCES
+    # for x in range()
+
+
+    #SECOND PASS
+
+
+
+                
+
+    
+
+                    
+
+
+    
+
 #%%
 def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None = None):
     """
     Accepts # cores that are a power of 2
+
     """
 
     if not ((cores & (cores-1) == 0) and cores > 0):
@@ -106,6 +159,8 @@ def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None =
     numObjects = 0
     pixelIdxList = []
 
+
+
     #creates the CC
     CC = {
         'Connectivity': connectivity,
@@ -129,8 +184,8 @@ def main():
 
     # Tester.test_bwconncomp_match(CC, image, component_indices)
 
-    image = np.zeros((2048, 2048))
-    blocks = generate_2d_blocks(image, cores=16)
+    image = np.zeros((1000, 2048))
+    blocks = generate_2d_blocks(image, cores=2)
 
     # Print block information
     for i, block in enumerate(blocks):

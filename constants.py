@@ -9,6 +9,8 @@ Ignore PNG alpha channel
 
 Sort components based on smallest index
 
+Image ranges from 512*512 -> 2048*2048
+
 """
 
 import numpy as np
