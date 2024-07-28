@@ -260,12 +260,23 @@ def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None =
     #merge blocks and resolve global equivalances
     BW = merge_2d_blocks(blocks, global_equivalences, width, height)
 
-
     #sets up CC
     connectivity = conn
     imageSize = BW.shape
     numObjects = 0
-    pixelIdxList = []
+    pixelIdxList = {}
+
+
+    for x in range(width):
+        for y in range(height):
+            pixel = BW[x, y]
+            if pixel != 0:
+                if pixel not in pixelIdxList:
+                    pixelIdxList[pixel] = []
+                
+                pixelIdxList[pixel].append(x * height + y)
+
+    pixelIdxList = list(pixelIdxList.values())
 
     #creates the CC
     CC = {
@@ -275,7 +286,7 @@ def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None =
         'PixelIdxList': pixelIdxList
     }
                 
-    return BW
+    return CC
     
 def main():
 
@@ -297,7 +308,7 @@ def main():
     #     print(f"Block {i}: From ({block['coord_start']} "
     #         f"to ({block['coord_end']}), with range {block['label_range']}")
 
-    
+
 
     return 0
 
