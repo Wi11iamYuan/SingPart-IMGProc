@@ -113,9 +113,9 @@ def main():
 
     # image, component_indices = gen_RNG_3dBW(50, 50, 50, 5, 25, 50, conn6)
 
-    image, component_indices = BWTest.get_conn26_test(0)
+    image, component_indices = BWTest.get_conn8_test(2)
 
-    CC = bwconncomp_recursive(image, 26)
+    CC = bwconncomp_recursive(image, 8)
 
     Tester.test_bwconncomp_match(CC, image, component_indices)
 

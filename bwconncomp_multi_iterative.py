@@ -170,22 +170,22 @@ def process_vertical(left_block, right_block, global_equivalences):
             process_union(global_equivalences, left_border[row], right_border[row])
 
 
-def process_union(global_equivalences, label1, label2):
-    root1 = find_root_label(global_equivalences, label1)
-    root2 = find_root_label(global_equivalences, label2)
+def process_union(equivalences, label1, label2):
+    root1 = find_root_label(equivalences, label1)
+    root2 = find_root_label(equivalences, label2)
     if root1 != root2:
-        global_equivalences[max(root1, root2)] = min(root1, root2)
+        equivalences[max(root1, root2)] = min(root1, root2)
 
 
-def find_root_label(global_equivalences, label):
+def find_root_label(equivalences, label):
     root = label
-    while root in global_equivalences:
-        root = global_equivalences[root]
+    while root in equivalences:
+        root = equivalences[root]
 
     #path compression
     while label != root:
-        parent = global_equivalences[label]
-        global_equivalences[label] = root
+        parent = equivalences[label]
+        equivalences[label] = root
         label = parent
 
     return root
@@ -204,7 +204,7 @@ def merge_2d_blocks(blocks, equivalances, width, height):
             for y in range(y_start, y_end +1):
                 label = block['labels'][x-x_start, y-y_start]
                 if label != 0 and label in equivalances:
-                    label = equivalances[label]
+                    label = find_root_label(equivalances, label)
                 
                 new_BW[x, y] = label
 
@@ -261,6 +261,7 @@ def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None =
 
     #merge blocks and resolve global equivalances
     BW = merge_2d_blocks(blocks, global_equivalences, width, height)
+    print(BW)
 
     #sets up CC
     connectivity = conn
@@ -297,12 +298,12 @@ def main():
 
     # image, component_indices = gen_RNG_3dBW(50, 50, 50, 5, 25, 50, conn6)
 
-    image, component_indices = BWTest.get_conn4_test(0)
+    image, component_indices = BWTest.get_conn8_test(2)
 
-    CC = bwconncomp_iterative(image, 4, 1)
+    CC = bwconncomp_iterative(image, 8, 1)
     print(CC)
 
-    Tester.test_bwconncomp_match(CC, image, component_indices)
+    # Tester.test_bwconncomp_match(CC, image, component_indices)
 
     # image = np.zeros((1423, 1443))
     # blocks, x, y = generate_2d_blocks(image, cores=8)

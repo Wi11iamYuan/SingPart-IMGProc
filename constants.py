@@ -316,13 +316,25 @@ class Tester():
     @staticmethod
     def test_bwconncomp_match(CC, image, component_indices):
         print(f"Objects detected: {CC['NumObjects']}")
+        if CC["NumObjects"] != len(component_indices):
+            print("Number of components detected does not match")
+            return
+        
+        count = 0
 
         for i in range(0, CC["NumObjects"]):
-            print(f"Component {i+1} Matches") if CC['PixelIdxList'][i] == component_indices[i] else print(f"Component {i+1} Does Not Match")
+            if CC['PixelIdxList'][i] == component_indices[i]:
+                print(f"Component {i+1} Matches")
+                count +=1
+            else:
+                print(f"Component {i+1} Does Not Match")
             print("bwconncomp")
             print(CC['PixelIdxList'][i])
             print("test")
             print(component_indices[i])
+
+        if count == len(component_indices):
+            print("All Components Match")
 
         if len(CC['ImageSize']) == 3:
             vol_img = np.array(image)
