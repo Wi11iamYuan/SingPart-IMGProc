@@ -121,7 +121,7 @@ def label_2d_blocks(BW, block, conn):
     #SECOND PASS
     for x in range(x_start, x_end +1):
         for y in range(y_start, y_end +1):
-            if labels[x-x_start, y-y_start] != 0:
+            if labels[x-x_start, y-y_start] != 0 and labels[x-x_start, y-y_start] in equivalences:
                 labels[x-x_start, y-y_start] = equivalences[labels[x-x_start, y-y_start]]
 
     new_block = {
@@ -194,7 +194,9 @@ def find_root_label(global_equivalences, label):
 def merge_2d_blocks(blocks, equivalances, width, height):
     new_BW = np.zeros(shape=(width, height))
 
-    for block in blocks:
+    for i in range(len(blocks)):
+        for j in range(len(blocks[0])):
+            block = blocks[i][j]
         x_start, y_start = block['coord_start']
         x_end, y_end = block['coord_end']
 
@@ -247,7 +249,7 @@ def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None =
         blocks[i] = label_2d_blocks(BW, block, M)
 
     #change blocks to grid format:
-    temp = [num_rows][num_cols]
+    temp = [[None for _ in range(num_cols)] for _ in range(num_rows)]
     for row in range(num_rows):
         for col in range(num_cols):
             temp[row][col] = blocks[row*num_cols + col]
@@ -273,6 +275,7 @@ def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None =
             if pixel != 0:
                 if pixel not in pixelIdxList:
                     pixelIdxList[pixel] = []
+                    numObjects += 1
                 
                 pixelIdxList[pixel].append(x * height + y)
 
@@ -297,6 +300,7 @@ def main():
     image, component_indices = BWTest.get_conn4_test(0)
 
     CC = bwconncomp_iterative(image, 4, 1)
+    print(CC)
 
     Tester.test_bwconncomp_match(CC, image, component_indices)
 
