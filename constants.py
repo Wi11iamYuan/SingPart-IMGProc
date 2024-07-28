@@ -333,9 +333,9 @@ class Tester():
             plt.imshow(image)
 
     @staticmethod
-    def test_bwconncomp_time(BW, conn, method):
+    def test_bwconncomp_time(BW, conn, method, cores = None):
         start = time.time()
-        CC = method(BW, conn)
+        CC = method(BW, conn, cores)
         end = time.time()
         print(f"Time taken: {end-start} seconds")
         return CC

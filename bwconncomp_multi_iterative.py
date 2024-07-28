@@ -92,7 +92,7 @@ def label_2d_blocks(BW, block, conn):
                 continue
 
             neighbors = []
-            for dx, dy in conn:
+            for dx, dy, dz in conn:
                 nx, ny = x + dx, y + dy
 
                 if x_start <= nx <= x_end and y_start <= ny <= y_end:
@@ -209,7 +209,7 @@ def merge_2d_blocks(blocks, equivalances, width, height):
     return new_BW
 
 
-def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None = None):
+def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None = 1):
     """
     Accepts # cores that are a power of 2
 
@@ -294,11 +294,11 @@ def main():
 
     # image, component_indices = gen_RNG_3dBW(50, 50, 50, 5, 25, 50, conn6)
 
-    # image, component_indices = BWTest.get_conn26_test(0)
+    image, component_indices = BWTest.get_conn4_test(0)
 
-    # CC = bwconncomp_iterative(image, 26)
+    CC = bwconncomp_iterative(image, 4, 1)
 
-    # Tester.test_bwconncomp_match(CC, image, component_indices)
+    Tester.test_bwconncomp_match(CC, image, component_indices)
 
     # image = np.zeros((1423, 1443))
     # blocks, x, y = generate_2d_blocks(image, cores=8)
@@ -307,8 +307,6 @@ def main():
     # for i, block in enumerate(blocks):
     #     print(f"Block {i}: From ({block['coord_start']} "
     #         f"to ({block['coord_end']}), with range {block['label_range']}")
-
-
 
     return 0
 

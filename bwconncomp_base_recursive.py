@@ -43,7 +43,7 @@ def bwconncomp_flood3d(BW, TRACK, M, idxList, x, y, z):
         bwconncomp_flood3d(BW, TRACK, M, idxList, nx, ny, nz)
 
 #%%
-def bwconncomp_recursive(BW = None, conn: int | None = None):
+def bwconncomp_recursive(BW = None, conn: int | None = None, cores = None):
     #turns BW into a numpy array, then creates an empty track for the recursion later
     BW = np.asarray(BW)
     TRACK = np.zeros(BW.shape, dtype=int)
