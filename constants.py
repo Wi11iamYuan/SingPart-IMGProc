@@ -328,7 +328,7 @@ class Tester():
                 count +=1
             else:
                 print(f"Component {i+1} Does Not Match")
-            print("bwconncomp")
+            print("algorithm")
             print(CC['PixelIdxList'][i])
             print("test")
             print(component_indices[i])

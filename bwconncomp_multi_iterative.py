@@ -73,7 +73,7 @@ def generate_2d_blocks(BW, cores):
     
     return blocks, blocks_x, blocks_y
 
-def label_2d_blocks(BW, block, conn):
+def label_2d_block(BW, block, conn):
     x_start, y_start = block['coord_start']
     x_end, y_end = block['coord_end']
 
@@ -108,7 +108,10 @@ def label_2d_blocks(BW, block, conn):
 
                 for n in neighbors:
                     if n != 0 and n != min_label:
-                        equivalences[n] = min_label
+                        # equivalences[n] = min_label
+                        process_union(equivalences, n, min_label)
+
+    print(labels)
 
     #RESOLVE EQUIVALENCES
     for label in range(start_label, next_label):
@@ -135,6 +138,26 @@ def label_2d_blocks(BW, block, conn):
     }
 
     return new_block
+
+def process_union(equivalences, label1, label2):
+    root1 = find_root_label(equivalences, label1)
+    root2 = find_root_label(equivalences, label2)
+    if root1 != root2:
+        equivalences[max(root1, root2)] = min(root1, root2)
+
+def find_root_label(equivalences, label):
+    #find root label
+    root = label
+    while root in equivalences:
+        root = equivalences[root]
+
+    #path compression
+    while label != root:
+        parent = equivalences[label]
+        equivalences[label] = root
+        label = parent
+
+    return root
 
 #change to work with multiple cpus (multiprocessing)
 def process_2d_equivalences(blocks, num_rows, num_cols):
@@ -168,27 +191,6 @@ def process_vertical(left_block, right_block, global_equivalences):
     for row in range(left_border.shape[0]):
         if left_border[row] != 0 and right_border[row] != 0:
             process_union(global_equivalences, left_border[row], right_border[row])
-
-
-def process_union(equivalences, label1, label2):
-    root1 = find_root_label(equivalences, label1)
-    root2 = find_root_label(equivalences, label2)
-    if root1 != root2:
-        equivalences[max(root1, root2)] = min(root1, root2)
-
-
-def find_root_label(equivalences, label):
-    root = label
-    while root in equivalences:
-        root = equivalences[root]
-
-    #path compression
-    while label != root:
-        parent = equivalences[label]
-        equivalences[label] = root
-        label = parent
-
-    return root
 
 #change to work with multiple cpus (multiprocessing)
 def merge_2d_blocks(blocks, equivalances, width, height):
@@ -246,7 +248,7 @@ def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None =
 
     #change to work with multiple cpus (multiprocessing)
     for i, block in enumerate(blocks):
-        blocks[i] = label_2d_blocks(BW, block, M)
+        blocks[i] = label_2d_block(BW, block, M)
 
     #change blocks to grid format:
     temp = [[None for _ in range(num_cols)] for _ in range(num_rows)]
@@ -298,12 +300,12 @@ def main():
 
     # image, component_indices = gen_RNG_3dBW(50, 50, 50, 5, 25, 50, conn6)
 
-    image, component_indices = BWTest.get_conn8_test(2)
+    image, component_indices = BWTest.get_conn4_test(2)
 
-    CC = bwconncomp_iterative(image, 8, 1)
+    CC = bwconncomp_iterative(image, 4, 1)
     print(CC)
 
-    # Tester.test_bwconncomp_match(CC, image, component_indices)
+    Tester.test_bwconncomp_match(CC, image, component_indices)
 
     # image = np.zeros((1423, 1443))
     # blocks, x, y = generate_2d_blocks(image, cores=8)
