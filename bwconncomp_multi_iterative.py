@@ -73,6 +73,7 @@ def generate_2d_blocks(BW, cores):
     
     return blocks, blocks_x, blocks_y
 
+
 def label_2d_block(BW, block, conn):
     x_start, y_start = block['coord_start']
     x_end, y_end = block['coord_end']
@@ -108,24 +109,13 @@ def label_2d_block(BW, block, conn):
 
                 for n in neighbors:
                     if n != 0 and n != min_label:
-                        # equivalences[n] = min_label
                         process_union(equivalences, n, min_label)
-
-    print(labels)
-
-    #RESOLVE EQUIVALENCES
-    for label in range(start_label, next_label):
-        if label in equivalences:
-            root = label
-            while root in equivalences:
-                root = equivalences[root]
-            equivalences[label] = root
 
     #SECOND PASS
     for x in range(x_start, x_end +1):
         for y in range(y_start, y_end +1):
             if labels[x-x_start, y-y_start] != 0 and labels[x-x_start, y-y_start] in equivalences:
-                labels[x-x_start, y-y_start] = equivalences[labels[x-x_start, y-y_start]]
+                labels[x-x_start, y-y_start] = find_root_label(equivalences, labels[x-x_start, y-y_start])
 
     new_block = {
         'coord_start': (x_start, y_start),
@@ -159,38 +149,53 @@ def find_root_label(equivalences, label):
 
     return root
 
+
 #change to work with multiple cpus (multiprocessing)
-def process_2d_equivalences(blocks, num_rows, num_cols):
+def process_2d_equivalences(blocks, num_rows, num_cols, conn):
     global_equivalences = {}
 
     #process horizontal merges
     for i in range(num_rows -1):
         for j in range(num_cols):
-            process_horizontal(blocks[i][j], blocks[i+1][j], global_equivalences)
+            process_horizontal(blocks[i][j], blocks[i+1][j], global_equivalences, conn)
     
     #process vertical merges
     for i in range(num_rows):
         for j in range(num_cols -1):
-            process_vertical(blocks[i][j], blocks[i][j+1], global_equivalences)
+            process_vertical(blocks[i][j], blocks[i][j+1], global_equivalences, conn)
 
     return global_equivalences
 
-
-def process_horizontal(upper_block, lower_block, global_equivalences):
+#fix these to incorp the correct algorithm, in mind for both conn4 and conn8
+def process_horizontal(upper_block, lower_block, global_equivalences, conn):
     upper_border = upper_block['border_bottom']
     lower_border = lower_block['border_top']
 
-    for col in range(upper_border.shape[0]):
-        if upper_border[col] != 0 and lower_border[col] != 0:
-            process_union(global_equivalences, upper_border[col], lower_border[col])
+    search_extend = abs(1 - len(conn) // 4)
 
-def process_vertical(left_block, right_block, global_equivalences):
+    for base in range(len(upper_border)):
+        for offset in range (0-search_extend, search_extend+1):
+            extend = base + offset
+            if extend < 0 or extend >= len(lower_border):
+                continue
+
+            if upper_border[base] != 0 and lower_border[extend] != 0:
+                process_union(global_equivalences, upper_border[base], lower_border[extend])
+
+def process_vertical(left_block, right_block, global_equivalences, conn):
     left_border = left_block['border_right']
     right_border = right_block['border_left']
 
-    for row in range(left_border.shape[0]):
-        if left_border[row] != 0 and right_border[row] != 0:
-            process_union(global_equivalences, left_border[row], right_border[row])
+    search_extend = abs(1 - len(conn) // 4)
+
+    for base in range(len(left_border)):
+        for offset in range (0-search_extend, search_extend+1):
+            extend = base + offset
+            if extend < 0 or extend >= len(right_border):
+                continue
+
+            if left_border[base] != 0 and right_border[extend] != 0:
+                process_union(global_equivalences, left_border[base], right_border[extend])
 
 #change to work with multiple cpus (multiprocessing)
 def merge_2d_blocks(blocks, equivalances, width, height):
@@ -199,16 +204,16 @@ def merge_2d_blocks(blocks, equivalances, width, height):
     for i in range(len(blocks)):
         for j in range(len(blocks[0])):
             block = blocks[i][j]
-        x_start, y_start = block['coord_start']
-        x_end, y_end = block['coord_end']
+            x_start, y_start = block['coord_start']
+            x_end, y_end = block['coord_end']
 
-        for x in range(x_start, x_end +1):
-            for y in range(y_start, y_end +1):
-                label = block['labels'][x-x_start, y-y_start]
-                if label != 0 and label in equivalances:
-                    label = find_root_label(equivalances, label)
-                
-                new_BW[x, y] = label
+            for x in range(x_start, x_end +1):
+                for y in range(y_start, y_end +1):
+                    label = block['labels'][x-x_start, y-y_start]
+                    if label != 0 and label in equivalances:
+                        label = find_root_label(equivalances, label)
+                    
+                    new_BW[x, y] = label
 
     return new_BW
 
@@ -252,18 +257,21 @@ def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None =
 
     #change blocks to grid format:
     temp = [[None for _ in range(num_cols)] for _ in range(num_rows)]
+    print(num_rows, num_cols)
     for row in range(num_rows):
         for col in range(num_cols):
             temp[row][col] = blocks[row*num_cols + col]
+            print(temp[row][col]['labels'])
+            print("")
     
     blocks = temp
 
     #figure out global equivalences for merging
-    global_equivalences = process_2d_equivalences(blocks, num_rows, num_cols)
+    global_equivalences = process_2d_equivalences(blocks, num_rows, num_cols, M)
 
     #merge blocks and resolve global equivalances
     BW = merge_2d_blocks(blocks, global_equivalences, width, height)
-    print(BW)
+    # print(BW)
 
     #sets up CC
     connectivity = conn
@@ -296,13 +304,13 @@ def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None =
     
 def main():
 
-    # image, component_indices = gen_RNG_2dBW(50, 50, 5, 25, 50, conn4)
+    # image, component_indices = gen_RNG_2dBW(50, 50, 15, 25, 50, conn4)
 
     # image, component_indices = gen_RNG_3dBW(50, 50, 50, 5, 25, 50, conn6)
 
-    image, component_indices = BWTest.get_conn4_test(2)
+    image, component_indices = BWTest.get_conn8_test(2)
 
-    CC = bwconncomp_iterative(image, 4, 1)
+    CC = bwconncomp_iterative(image, 8, 8)
     print(CC)
 
     Tester.test_bwconncomp_match(CC, image, component_indices)
