@@ -58,3 +58,68 @@ def generate_3d_blocks(BW, cores):
         x_start += current_width
 
     return blocks
+
+def process_2d_equivalences(blocks, num_rows, num_cols, conn):
+    global_equivalences = {}
+
+    #process horizontal merges
+    for i in range(num_rows -1):
+        for j in range(num_cols):
+            process_horizontal(blocks[i][j], blocks[i+1][j], global_equivalences, conn)
+    
+    #process vertical merges
+    for i in range(num_rows):
+        for j in range(num_cols -1):
+            process_vertical(blocks[i][j], blocks[i][j+1], global_equivalences, conn)
+
+    return global_equivalences
+
+def process_horizontal(upper_block, lower_block, global_equivalences, conn):
+    upper_border = upper_block['border_bottom']
+    lower_border = lower_block['border_top']
+
+    search_extend = abs(1 - len(conn) // 4)
+
+    for base in range(len(upper_border)):
+        for offset in range (0-search_extend, search_extend+1):
+            extend = base + offset
+            if extend < 0 or extend >= len(lower_border):
+                continue
+
+            if upper_border[base] != 0 and lower_border[extend] != 0:
+                process_union(global_equivalences, upper_border[base], lower_border[extend])
+
+def process_vertical(left_block, right_block, global_equivalences, conn):
+    left_border = left_block['border_right']
+    right_border = right_block['border_left']
+
+    search_extend = abs(1 - len(conn) // 4)
+
+    for base in range(len(left_border)):
+        for offset in range (0-search_extend, search_extend+1):
+            extend = base + offset
+            if extend < 0 or extend >= len(right_border):
+                continue
+
+            if left_border[base] != 0 and right_border[extend] != 0:
+                process_union(global_equivalences, left_border[base], right_border[extend])
+
+def process_union(equivalences, label1, label2):
+    root1 = find_root_label(equivalences, label1)
+    root2 = find_root_label(equivalences, label2)
+    if root1 != root2:
+        equivalences[max(root1, root2)] = min(root1, root2)
+
+def find_root_label(equivalences, label):
+    #find root label
+    root = label
+    while root in equivalences:
+        root = equivalences[root]
+
+    #path compression
+    while label != root:
+        parent = equivalences[label]
+        equivalences[label] = root
+        label = parent
+
+    return root

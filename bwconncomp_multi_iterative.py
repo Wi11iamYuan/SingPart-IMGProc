@@ -46,15 +46,15 @@ def generate_2d_blocks(BW, cores):
     blocks = []
 
     current_label = 1
-    y_start = 0
-    for i in range(blocks_y):
-        # Adjust block height if there are remainder pixels to distribute
-        current_height = block_height + (1 if i < remainder_y else 0)
-        x_start = 0
+    x_start = 0
+    for i in range(blocks_x):
+        # Adjust block width if there are remainder pixels to distribute
+        current_width = block_width + (1 if i < remainder_x else 0)
+        y_start = 0
         
-        for j in range(blocks_x):
-            # Adjust block width if there are remainder pixels to distribute
-            current_width = block_width + (1 if j < remainder_x else 0)
+        for j in range(blocks_y):
+            # Adjust block height if there are remainder pixels to distribute
+            current_height = block_height + (1 if j < remainder_y else 0)
             
             # Create a block with its coordinates and size
             block = {
@@ -65,11 +65,11 @@ def generate_2d_blocks(BW, cores):
             }
             blocks.append(block)
             
-            x_start += current_width
+            y_start += current_height
 
             current_label += current_width * current_height
         
-        y_start += current_height
+        x_start += current_width
     
     return blocks, blocks_x, blocks_y
 
@@ -121,10 +121,10 @@ def label_2d_block(BW, block, conn):
         'coord_start': (x_start, y_start),
         'coord_end': (x_end, y_end),
         'labels': labels,
-        'border_top': labels[:, 0],
-        'border_bottom': labels[:, -1],
-        'border_left': labels[0, :],
-        'border_right': labels[-1, :],
+        'border_top': labels[0, :],
+        'border_bottom': labels[-1, :],
+        'border_left': labels[:, 0],
+        'border_right': labels[:, -1],
     }
 
     return new_block
@@ -149,58 +149,54 @@ def find_root_label(equivalences, label):
 
     return root
 
-
 #change to work with multiple cpus (multiprocessing)
-def process_2d_equivalences(blocks, num_rows, num_cols, conn):
+def process_2d_equivalences(line_labels, conn):
     global_equivalences = {}
 
-    #process horizontal merges
-    for i in range(num_rows -1):
-        for j in range(num_cols):
-            process_horizontal(blocks[i][j], blocks[i+1][j], global_equivalences, conn)
-    
-    #process vertical merges
-    for i in range(num_rows):
-        for j in range(num_cols -1):
-            process_vertical(blocks[i][j], blocks[i][j+1], global_equivalences, conn)
+    for line in line_labels:
+        first_half, second_half = line[0], line[1]
+
+        search_extend = abs(1 - len(conn) // 4)
+
+        for base in range(len(first_half)):
+            for offset in range(0-search_extend, search_extend+1):
+                extend = base + offset
+                if extend < 0 or extend >= len(first_half):
+                    continue
+
+                if first_half[base] != 0 and second_half[extend] != 0:
+                    process_union(global_equivalences, first_half[base], second_half[extend])
 
     return global_equivalences
 
-def process_horizontal(upper_block, lower_block, global_equivalences, conn):
-    upper_border = upper_block['border_bottom']
-    lower_border = lower_block['border_top']
-
-    search_extend = abs(1 - len(conn) // 4)
-
-    for base in range(len(upper_border)):
-        for offset in range (0-search_extend, search_extend+1):
-            extend = base + offset
-            if extend < 0 or extend >= len(lower_border):
-                continue
-
-            if upper_border[base] != 0 and lower_border[extend] != 0:
-                process_union(global_equivalences, upper_border[base], lower_border[extend])
-
-def process_vertical(left_block, right_block, global_equivalences, conn):
-    left_border = left_block['border_right']
-    right_border = right_block['border_left']
-
-    search_extend = abs(1 - len(conn) // 4)
-
-    for base in range(len(left_border)):
-        for offset in range (0-search_extend, search_extend+1):
-            extend = base + offset
-            if extend < 0 or extend >= len(right_border):
-                continue
-
-            if left_border[base] != 0 and right_border[extend] != 0:
-                process_union(global_equivalences, left_border[base], right_border[extend])
-
-def get_central_line_labels(blocks, num_rows, num_cols, conn):
+def get_central_line_labels(blocks, num_rows, num_cols):
 
     central_line_labels = []
 
-    pass
+    #process vertical lines
+    for j in range(num_cols-1):
+        line_labels_left = []
+        line_labels_right = []
+        for i in range(num_rows):
+            line_labels_left.extend(blocks[i][j]['border_right'])
+            line_labels_right.extend(blocks[i][j+1]['border_left'])        
+        
+        vertical_line = [line_labels_left, line_labels_right]
+        central_line_labels.append(vertical_line)
+
+    #process horizontal lines
+    for i in range(num_rows-1):
+        line_labels_top = []
+        line_labels_bottom = []
+        for j in range(num_cols):
+            line_labels_top.extend(blocks[i][j]['border_bottom'])
+            line_labels_bottom.extend(blocks[i+1][j]['border_top'])    
+        
+        horizontal_line = [line_labels_top, line_labels_bottom]
+        central_line_labels.append(horizontal_line)
+
+    return central_line_labels
+
 
 
 #change to work with multiple cpus (multiprocessing)
@@ -259,32 +255,25 @@ def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None =
         # else: # conn = 26
         #     M = conn26
 
+
     #change to work with multiple cpus (multiprocessing)
     for i, block in enumerate(blocks):
         blocks[i] = label_2d_block(BW, block, M)
-        print(blocks[i]['labels'])
-        print(blocks[i]["border_top"])
-        print(blocks[i]["border_bottom"])
-        print(blocks[i]["border_left"])
-        print(blocks[i]["border_right"])
 
     #change blocks to grid format:
     temp = [[None for _ in range(num_cols)] for _ in range(num_rows)]
-    print(num_rows, num_cols)
     for row in range(num_rows):
         for col in range(num_cols):
             temp[row][col] = blocks[row*num_cols + col]
-            print(temp[row][col]['labels'])
-            print("")
-    
     blocks = temp
 
     #figure out global equivalences for merging
-    global_equivalences = process_2d_equivalences(blocks, num_rows, num_cols, M)
+    line_labels = get_central_line_labels(blocks, num_rows, num_cols)
+
+    global_equivalences = process_2d_equivalences(line_labels, M)
 
     #merge blocks and resolve global equivalances
     BW = merge_2d_blocks(blocks, global_equivalences, width, height)
-    print(BW)
 
     #sets up CC
     connectivity = conn
