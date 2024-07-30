@@ -121,10 +121,10 @@ def label_2d_block(BW, block, conn):
         'coord_start': (x_start, y_start),
         'coord_end': (x_end, y_end),
         'labels': labels,
-        'border_top': labels[0, :],
-        'border_bottom': labels[-1, :],
-        'border_left': labels[:, 0],
-        'border_right': labels[:, -1],
+        'border_top': labels[:, 0],
+        'border_bottom': labels[:, -1],
+        'border_left': labels[0, :],
+        'border_right': labels[-1, :],
     }
 
     return new_block
@@ -166,7 +166,6 @@ def process_2d_equivalences(blocks, num_rows, num_cols, conn):
 
     return global_equivalences
 
-#fix these to incorp the correct algorithm, in mind for both conn4 and conn8
 def process_horizontal(upper_block, lower_block, global_equivalences, conn):
     upper_border = upper_block['border_bottom']
     lower_border = lower_block['border_top']
@@ -197,6 +196,13 @@ def process_vertical(left_block, right_block, global_equivalences, conn):
             if left_border[base] != 0 and right_border[extend] != 0:
                 process_union(global_equivalences, left_border[base], right_border[extend])
 
+def get_central_line_labels(blocks, num_rows, num_cols, conn):
+
+    central_line_labels = []
+
+    pass
+
+
 #change to work with multiple cpus (multiprocessing)
 def merge_2d_blocks(blocks, equivalances, width, height):
     new_BW = np.zeros(shape=(width, height))
@@ -221,6 +227,8 @@ def merge_2d_blocks(blocks, equivalances, width, height):
 def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None = 1):
     """
     Accepts # cores that are a power of 2
+    Careful with allocated cores
+    Handles 2D images only
 
     """
 
@@ -254,6 +262,11 @@ def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None =
     #change to work with multiple cpus (multiprocessing)
     for i, block in enumerate(blocks):
         blocks[i] = label_2d_block(BW, block, M)
+        print(blocks[i]['labels'])
+        print(blocks[i]["border_top"])
+        print(blocks[i]["border_bottom"])
+        print(blocks[i]["border_left"])
+        print(blocks[i]["border_right"])
 
     #change blocks to grid format:
     temp = [[None for _ in range(num_cols)] for _ in range(num_rows)]
@@ -271,7 +284,7 @@ def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None =
 
     #merge blocks and resolve global equivalances
     BW = merge_2d_blocks(blocks, global_equivalences, width, height)
-    # print(BW)
+    print(BW)
 
     #sets up CC
     connectivity = conn
@@ -310,7 +323,7 @@ def main():
 
     image, component_indices = BWTest.get_conn8_test(2)
 
-    CC = bwconncomp_iterative(image, 8, 8)
+    CC = bwconncomp_iterative(image, 8, 4)
     print(CC)
 
     Tester.test_bwconncomp_match(CC, image, component_indices)
