@@ -2,7 +2,7 @@ import numpy as np
 import math
 import sys
 
-import multiprocessing
+from multiprocessing import Process
 import threading
 
 import matplotlib.pyplot as plt
@@ -80,7 +80,6 @@ def label_2d_block(BW, block, conn):
 
     labels = np.zeros(shape=(x_end-x_start +1, y_end-y_start +1))
     
-    start_label = block['label_range'][0]
     next_label = block['label_range'][0]
 
     equivalences = {}
@@ -199,28 +198,21 @@ def get_central_line_labels(blocks, num_rows, num_cols):
 
 
 
-#change to work with multiple cpus (multiprocessing)
-def merge_2d_blocks(blocks, equivalances, width, height):
-    new_BW = np.zeros(shape=(width, height))
+def merge_2d_blocks(BW, block, equivalances):
 
-    for i in range(len(blocks)):
-        for j in range(len(blocks[0])):
-            block = blocks[i][j]
-            x_start, y_start = block['coord_start']
-            x_end, y_end = block['coord_end']
+    x_start, y_start = block['coord_start']
+    x_end, y_end = block['coord_end']
 
-            for x in range(x_start, x_end +1):
-                for y in range(y_start, y_end +1):
-                    label = block['labels'][x-x_start, y-y_start]
-                    if label != 0 and label in equivalances:
-                        label = find_root_label(equivalances, label)
-                    
-                    new_BW[x, y] = label
-
-    return new_BW
+    for x in range(x_start, x_end +1):
+        for y in range(y_start, y_end +1):
+            label = block['labels'][x-x_start, y-y_start]
+            if label != 0 and label in equivalances:
+                label = find_root_label(equivalances, label)
+            
+            BW[x, y] = label
 
 
-def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None = 1):
+def bwconncomp_iterative(BW = None, conn = 4, cores = 1):
     """
     Accepts # cores that are a power of 2
     Careful with allocated cores
@@ -257,6 +249,8 @@ def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None =
 
 
     #change to work with multiple cpus (multiprocessing)
+    processes = []
+
     for i, block in enumerate(blocks):
         blocks[i] = label_2d_block(BW, block, M)
 
@@ -273,7 +267,13 @@ def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None =
     global_equivalences = process_2d_equivalences(line_labels, M)
 
     #merge blocks and resolve global equivalances
-    BW = merge_2d_blocks(blocks, global_equivalences, width, height)
+    new_BW = np.zeros(shape=(width, height))
+
+    for i in range(num_rows):
+        for j in range(num_cols):
+            block = blocks[i][j]
+
+            merge_2d_blocks(new_BW, block, global_equivalences)
 
     #sets up CC
     connectivity = conn
@@ -281,7 +281,7 @@ def bwconncomp_iterative(BW = None, conn: int | None = None, cores: int | None =
     numObjects = 0
     pixelIdxList = {}
 
-
+    #change to work with multiple cpus (multiprocessing)
     for x in range(width):
         for y in range(height):
             pixel = BW[x, y]
@@ -316,14 +316,6 @@ def main():
     print(CC)
 
     Tester.test_bwconncomp_match(CC, image, component_indices)
-
-    # image = np.zeros((1423, 1443))
-    # blocks, x, y = generate_2d_blocks(image, cores=8)
-
-    # # Print block information
-    # for i, block in enumerate(blocks):
-    #     print(f"Block {i}: From ({block['coord_start']} "
-    #         f"to ({block['coord_end']}), with range {block['label_range']}")
 
     return 0
 

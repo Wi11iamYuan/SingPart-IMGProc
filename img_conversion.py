@@ -36,4 +36,7 @@ def main():
     return 0
 
 if __name__ == '__main__':
-    sys.exit(main())
+    if hasattr(sys, 'ps1'):  # Check if in interactive mode
+        main()
+    else:
+        sys.exit(main())

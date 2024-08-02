@@ -345,7 +345,7 @@ class Tester():
             plt.imshow(image)
 
     @staticmethod
-    def test_bwconncomp_time(BW, conn, method, cores = None):
+    def test_bwconncomp_time(BW, conn, method, cores = 1):
         start = time.time()
         CC = method(BW, conn, cores)
         end = time.time()
