@@ -249,8 +249,6 @@ def bwconncomp_iterative(BW = None, conn = 4, cores = 1):
 
 
     #change to work with multiple cpus (multiprocessing)
-    processes = []
-
     for i, block in enumerate(blocks):
         blocks[i] = label_2d_block(BW, block, M)
 

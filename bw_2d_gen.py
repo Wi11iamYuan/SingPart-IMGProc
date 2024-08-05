@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from constants import *
 
 import sys
+from os import path
 
 def create_binary_image_with_components(width:int=150, height:int=150, max_comp:int=5, max_comp_pix:int=500, max_attempts=100, conn=conn4):
     image = np.zeros((width, height), dtype=int)
@@ -57,8 +58,22 @@ def get_component_indices(image, max_comp:int=5):
     components = sorted(components, key=lambda item: (item[0]))
     return components
 
-def gen_RNG_2dBW(x,y,max_comp,max_comp_pix,max_attempts,conn):
+def gen_RNG_2dBW(x,y,max_comp,max_comp_pix,max_attempts,conn,is_large=False):
     BW = create_binary_image_with_components(x,y,max_comp,max_comp_pix,max_attempts,conn)
+
+    if is_large:
+        valid = False
+        index = 0
+        while not valid:
+            if path.exists(f"./large_tests/2d_{x}x{y}_BW_{index}.txt"):
+                index += 1
+                continue
+            valid = True
+            
+        with open(f"./large_tests/2d_{x}x{y}_BW_{index}.txt", "w") as f:
+            f.write(f"{x} {y} {len(conn)}\n")
+            for row in BW:
+                f.write(" ".join([str(i) for i in row]) + "\n")
 
     component_indices = get_component_indices(BW, max_comp)
 
@@ -67,16 +82,16 @@ def gen_RNG_2dBW(x,y,max_comp,max_comp_pix,max_attempts,conn):
 
 
 def main():
-    image, component_indices = gen_RNG_2dBW(4, 13, 8, 24, 50, conn8)
+    image, component_indices = gen_RNG_2dBW(1000, 1000, 100, 1000, 100, conn8, True)
 
     # Print the indices for each component
     # for i in range(len(component_indices)):
     #     print(f"Component {i+1}: {component_indices[i]}")
 
     # Display the image
-    # plt.imshow(image)
-    print(image)
-    print(component_indices)
+    plt.imshow(image)
+    # print(image)
+    # print(component_indices)
 
     return 0
 

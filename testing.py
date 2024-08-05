@@ -6,13 +6,14 @@ import sys
 
 
 def main():
-    image, component_indices = BWTest.get_conn4_test(1)
-    
-    print("Recursive")
-    Tester.test_bwconncomp_time(image, 4, bwconncomp_recursive)
+    # image, component_indices = BWTest.get_conn4_test(1)
+    image = Tester.process_large_tests("./large_tests/2d_1000x1000_BW_0.txt")
 
     print("Iterative")
-    Tester.test_bwconncomp_time(image, 4, bwconncomp_iterative)
+    Tester.test_bwconncomp_time(image, 8, bwconncomp_iterative)
+
+    print("Recursive")
+    Tester.test_bwconncomp_time(image, 8, bwconncomp_recursive)
 
     return 0
 

@@ -343,6 +343,21 @@ class Tester():
             vol.show()
         else:
             plt.imshow(image)
+    
+    @staticmethod
+    def process_large_tests(file):
+        with open(file, 'r') as f:
+            meta = f.readline().split(" ")
+            shape = (int(meta[0]), int(meta[1]))
+            BW = np.zeros(shape)
+
+            for i in range(0, shape[0]):
+                line = f.readline().split(" ")
+                for j in range(0, shape[1]):
+                    BW[i, j] = int(line[j])
+
+        return BW
+
 
     @staticmethod
     def test_bwconncomp_time(BW, conn, method, cores = 1):
