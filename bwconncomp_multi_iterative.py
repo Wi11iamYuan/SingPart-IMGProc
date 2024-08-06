@@ -211,6 +211,7 @@ def merge_2d_blocks(BW, block, equivalances):
             BW[x, y] = label
 
 
+
 def bwconncomp_iterative(BW = None, conn = 4, cores = 1):
     """
     Accepts # cores that are a power of 2
@@ -253,18 +254,36 @@ def bwconncomp_iterative(BW = None, conn = 4, cores = 1):
     args = [(BW, block, M) for block in blocks]
     blocks = pool.starmap(label_2d_block, args)
 
+    # manager = mp.Manager()
+
+    # new_blocks = manager.list([None for _ in range(len(blocks))])
+
+    # processes = []
+    # events = []
+
+    # for i, block in enumerate(blocks):
+    #     event = mp.Event()
+    #     events.append(event)
+    #     p = mp.Process(target=label_2d_block, args=(BW, block, M, new_blocks, i, event))
+    #     processes.append(p)
+    #     p.start()
+
+    # for event in events:
+    #     event.wait()
+
+    # blocks = list(new_blocks)
+
     # for i, block in enumerate(blocks):
     #     blocks[i] = label_2d_block(BW, block, M)
 
     #change blocks to grid format:
-    temp = [[None for _ in range(num_cols)] for _ in range(num_rows)]
+    grid_blocks = [[None for _ in range(num_cols)] for _ in range(num_rows)]
     for row in range(num_rows):
         for col in range(num_cols):
-            temp[row][col] = blocks[row*num_cols + col]
-    blocks = temp
+            grid_blocks[row][col] = blocks[row*num_cols + col]
 
     #figure out global equivalences for merging
-    line_labels = get_central_line_labels(blocks, num_rows, num_cols)
+    line_labels = get_central_line_labels(grid_blocks, num_rows, num_cols)
 
     global_equivalences = process_2d_equivalences(line_labels, M)
 
@@ -273,14 +292,25 @@ def bwconncomp_iterative(BW = None, conn = 4, cores = 1):
 
     args = []
 
-    for i in range(num_rows):
-        for j in range(num_cols):
-            block = blocks[i][j]
-            args.append((new_BW, block, global_equivalences))
+    for block in blocks:
+        args.append((new_BW, block, global_equivalences))
             
     pool.starmap(merge_2d_blocks, args)
 
     pool.close()
+
+    # processes = []
+    # events = []
+
+    # for block in blocks:
+    #     event = mp.Event()
+    #     events.append(event)
+    #     p = mp.Process(target=merge_2d_blocks, args=(new_BW, block, global_equivalences, event))
+    #     processes.append(p)
+    #     p.start()
+
+    # for event in events:
+    #     event.wait()
 
     # for i in range(num_rows):
     #     for j in range(num_cols):
