@@ -2,8 +2,7 @@ import numpy as np
 import math
 import sys
 
-from multiprocessing import Process
-import threading
+import multiprocessing as mp
 
 import matplotlib.pyplot as plt
 import pyvista as pv
@@ -249,8 +248,13 @@ def bwconncomp_iterative(BW = None, conn = 4, cores = 1):
 
 
     #change to work with multiple cpus (multiprocessing)
-    for i, block in enumerate(blocks):
-        blocks[i] = label_2d_block(BW, block, M)
+    pool = mp.Pool(cores)
+
+    args = [(BW, block, M) for block in blocks]
+    blocks = pool.starmap(label_2d_block, args)
+
+    # for i, block in enumerate(blocks):
+    #     blocks[i] = label_2d_block(BW, block, M)
 
     #change blocks to grid format:
     temp = [[None for _ in range(num_cols)] for _ in range(num_rows)]
@@ -267,11 +271,22 @@ def bwconncomp_iterative(BW = None, conn = 4, cores = 1):
     #merge blocks and resolve global equivalances
     new_BW = np.zeros(shape=(width, height))
 
+    args = []
+
     for i in range(num_rows):
         for j in range(num_cols):
             block = blocks[i][j]
+            args.append((new_BW, block, global_equivalences))
+            
+    pool.starmap(merge_2d_blocks, args)
 
-            merge_2d_blocks(new_BW, block, global_equivalences)
+    pool.close()
+
+    # for i in range(num_rows):
+    #     for j in range(num_cols):
+    #         block = blocks[i][j]
+
+    #         merge_2d_blocks(new_BW, block, global_equivalences)
 
     #sets up CC
     connectivity = conn

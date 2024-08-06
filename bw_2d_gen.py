@@ -65,12 +65,12 @@ def gen_RNG_2dBW(x,y,max_comp,max_comp_pix,max_attempts,conn,is_large=False):
         valid = False
         index = 0
         while not valid:
-            if path.exists(f"./large_tests/2d_{x}x{y}_BW_{index}.txt"):
+            if path.exists(f"./large_tests/2d_{x}x{y}_BW_{len(conn)}_{index}.txt"):
                 index += 1
                 continue
             valid = True
             
-        with open(f"./large_tests/2d_{x}x{y}_BW_{index}.txt", "w") as f:
+        with open(f"./large_tests/2d_{x}x{y}_BW_{len(conn)}_{index}.txt", "w") as f:
             f.write(f"{x} {y} {len(conn)}\n")
             for row in BW:
                 f.write(" ".join([str(i) for i in row]) + "\n")
