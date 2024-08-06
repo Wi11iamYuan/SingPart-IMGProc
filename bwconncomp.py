@@ -5,12 +5,10 @@ import sys
 import multiprocessing as mp
 
 import matplotlib.pyplot as plt
-import pyvista as pv
 from constants import *
 
-from img_conversion import img_toBW
 from bw_2d_gen import gen_RNG_2dBW
-from bw_3d_gen import gen_RNG_3dBW
+
 
 def generate_2d_blocks(BW, cores):
     width = BW.shape[0]
@@ -148,24 +146,20 @@ def find_root_label(equivalences, label):
     return root
 
 #change to work with multiple cpus (multiprocessing)
-def process_2d_equivalences(line_labels, conn):
-    global_equivalences = {}
+def process_2d_equivalences(line, conn, equivalences):
 
-    for line in line_labels:
-        first_half, second_half = line[0], line[1]
+    first_half, second_half = line[0], line[1]
 
-        search_extend = abs(1 - len(conn) // 4)
+    search_extend = abs(1 - len(conn) // 4)
 
-        for base in range(len(first_half)):
-            for offset in range(0-search_extend, search_extend+1):
-                extend = base + offset
-                if extend < 0 or extend >= len(first_half):
-                    continue
+    for base in range(len(first_half)):
+        for offset in range(0-search_extend, search_extend+1):
+            extend = base + offset
+            if extend < 0 or extend >= len(first_half):
+                continue
 
-                if first_half[base] != 0 and second_half[extend] != 0:
-                    process_union(global_equivalences, first_half[base], second_half[extend])
-
-    return global_equivalences
+            if first_half[base] != 0 and second_half[extend] != 0:
+                process_union(equivalences, first_half[base], second_half[extend])
 
 def get_central_line_labels(blocks, num_rows, num_cols):
 
@@ -212,7 +206,7 @@ def merge_2d_blocks(BW, block, equivalances):
 
 
 
-def bwconncomp_iterative(BW = None, conn = 4, cores = 1):
+def bwconncomp(BW = None, conn = 4, cores = 1):
     """
     Accepts # cores that are a power of 2
     Careful with allocated cores
@@ -254,25 +248,6 @@ def bwconncomp_iterative(BW = None, conn = 4, cores = 1):
     args = [(BW, block, M) for block in blocks]
     blocks = pool.starmap(label_2d_block, args)
 
-    # manager = mp.Manager()
-
-    # new_blocks = manager.list([None for _ in range(len(blocks))])
-
-    # processes = []
-    # events = []
-
-    # for i, block in enumerate(blocks):
-    #     event = mp.Event()
-    #     events.append(event)
-    #     p = mp.Process(target=label_2d_block, args=(BW, block, M, new_blocks, i, event))
-    #     processes.append(p)
-    #     p.start()
-
-    # for event in events:
-    #     event.wait()
-
-    # blocks = list(new_blocks)
-
     # for i, block in enumerate(blocks):
     #     blocks[i] = label_2d_block(BW, block, M)
 
@@ -285,7 +260,9 @@ def bwconncomp_iterative(BW = None, conn = 4, cores = 1):
     #figure out global equivalences for merging
     line_labels = get_central_line_labels(grid_blocks, num_rows, num_cols)
 
-    global_equivalences = process_2d_equivalences(line_labels, M)
+    global_equivalences = {}
+    for line in line_labels:
+        process_2d_equivalences(line, M, global_equivalences)
 
     #merge blocks and resolve global equivalances
     new_BW = np.zeros(shape=(width, height))
@@ -298,19 +275,6 @@ def bwconncomp_iterative(BW = None, conn = 4, cores = 1):
     pool.starmap(merge_2d_blocks, args)
 
     pool.close()
-
-    # processes = []
-    # events = []
-
-    # for block in blocks:
-    #     event = mp.Event()
-    #     events.append(event)
-    #     p = mp.Process(target=merge_2d_blocks, args=(new_BW, block, global_equivalences, event))
-    #     processes.append(p)
-    #     p.start()
-
-    # for event in events:
-    #     event.wait()
 
     # for i in range(num_rows):
     #     for j in range(num_cols):
@@ -355,7 +319,7 @@ def main():
 
     image, component_indices = BWTest.get_conn8_test(2)
 
-    CC = bwconncomp_iterative(image, 8, 4)
+    CC = bwconncomp(image, 8, 4)
     print(CC)
 
     Tester.test_bwconncomp_match(CC, image, component_indices)

@@ -7,9 +7,9 @@ from constants import *
 
 import sys
 
-from img_conversion import img_toBW
+from archive.img_conversion import img_toBW
 from bw_2d_gen import gen_RNG_2dBW
-from bw_3d_gen import gen_RNG_3dBW
+from archive.bw_3d_gen import gen_RNG_3dBW
 
 #%%
 def bwconncomp_flood2d(BW, TRACK, M, idxList, x, y):
