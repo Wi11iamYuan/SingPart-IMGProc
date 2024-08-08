@@ -17,6 +17,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pyvista as pv
 import time
+from os import path
 
 
 conn4 = [
@@ -357,15 +358,43 @@ class Tester():
                     BW[i, j] = int(line[j])
 
         return BW
-
-
+    
     @staticmethod
     def test_bwconncomp_time(BW, conn, method, cores = 1):
         start = time.time()
         CC = method(BW, conn, cores)
         end = time.time()
-        print(f"Time taken: {end-start} seconds")
-        return CC
+        return end-start
+    
+    @staticmethod
+    def run_bwconncomp_analysis(BW, conn, method, cores = 1, times = 10):
+        category = ""
+        if method.__name__ == "bwconncomp_recursive":
+            category = "bwconncomp_recursive"
+        elif method.__name__ == "bwconncomp" and cores == 1:
+            category = "bwconncomp_iterative"
+        else:
+            category = "bwconncomp_multicore"
+
+        with open(f"./analysis/default_{category}_analysis.txt", "w") as f:
+            for i in range(times):
+                time = Tester.test_bwconncomp_time(BW, conn, method, cores)
+                f.write(f"{time}\n")
+
+
+    @staticmethod
+    def run_multicore_bwconncomp_analysis(BW, conn, method, max_cores = 1, times = 10):
+        category = "bwconncomp_multicore"
+
+        with open(f"./analysis/varying_{category}_analysis.txt", "w") as f:
+            base = 1
+            while base <= max_cores:
+                for i in range(times):
+                    time = Tester.test_bwconncomp_time(BW, conn, method, base)
+                    f.write(f"{base}, {time}\n")
+                base *= 2
+
+
 
 
 
