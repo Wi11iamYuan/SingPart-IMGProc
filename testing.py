@@ -7,7 +7,7 @@ import sys
 
 def main():
     # image, component_indices = BWTest.get_conn4_test(1)
-    image = Tester.process_large_tests("./large_tests/2d_1000x1000_BW_8_0.txt")
+    image = Tester.process_large_tests("./large_tests/2d_2048x2048_BW_8_0.txt")
 
     # cores = 8
     # print("Iterative")

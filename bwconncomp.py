@@ -11,15 +11,18 @@ from bw_2d_gen import gen_RNG_2dBW
 
 
 def generate_2d_blocks(BW, cores):
+    #define for later use
     width = BW.shape[0]
     height = BW.shape[1]
 
     blocks_x = 1
     blocks_y = 1
 
+    #how many times to split the image
     power = (int)(math.log2(cores))
     x_turn = True
 
+    #splits the image alternating between x and y
     for i in range(power):
         if x_turn:
             blocks_x *= 2
@@ -27,7 +30,7 @@ def generate_2d_blocks(BW, cores):
             blocks_y *= 2
         x_turn = not x_turn
     
-    # Calculate block sizes
+    #calculate block sizes
     block_width = width // blocks_x
     block_height = height // blocks_y
 
@@ -35,25 +38,20 @@ def generate_2d_blocks(BW, cores):
     remainder_x = width % blocks_x
     remainder_y = height % blocks_y
 
-    #help debug
-    # print(blocks_x, blocks_y)
-    # print(block_width, block_height)
-    # print(remainder_x, remainder_y)
-
     blocks = []
 
     current_label = 1
     x_start = 0
     for i in range(blocks_x):
-        # Adjust block width if there are remainder pixels to distribute
+        #adjust block width if there are remainder pixels to distribute
         current_width = block_width + (1 if i < remainder_x else 0)
         y_start = 0
         
         for j in range(blocks_y):
-            # Adjust block height if there are remainder pixels to distribute
+            #adjust block height if there are remainder pixels to distribute
             current_height = block_height + (1 if j < remainder_y else 0)
             
-            # Create a block with its coordinates and size
+            #create a block with its coordinates and size
             block = {
                 'coord_start': (x_start, y_start),
                 'coord_end': (x_start + current_width -1, 
@@ -61,7 +59,8 @@ def generate_2d_blocks(BW, cores):
                 'label_range': (current_label, current_label + current_width * current_height -1),
             }
             blocks.append(block)
-            
+
+            #update coordinates
             y_start += current_height
 
             current_label += current_width * current_height
@@ -72,9 +71,11 @@ def generate_2d_blocks(BW, cores):
 
 
 def label_2d_block(BW, block, conn):
+    #define for later use
     x_start, y_start = block['coord_start']
     x_end, y_end = block['coord_end']
 
+    #blank labels to fill in
     labels = np.zeros(shape=(x_end-x_start +1, y_end-y_start +1))
     
     next_label = block['label_range'][0]
@@ -88,6 +89,7 @@ def label_2d_block(BW, block, conn):
             if BW[x, y] == 0:
                 continue
 
+            #if not zero, add the pixels to neighbors from labels
             neighbors = []
             for dx, dy, dz in conn:
                 nx, ny = x + dx, y + dy
@@ -95,14 +97,16 @@ def label_2d_block(BW, block, conn):
                 if x_start <= nx <= x_end and y_start <= ny <= y_end:
                     neighbors.append(labels[nx-x_start, ny-y_start])
 
-
+            #if no neighbors or other pixels haven't been labeled yet, assign a new label
             if not neighbors or all(n==0 for n in neighbors):
                 labels[x-x_start, y-y_start] = next_label
                 next_label += 1
             else:
+                #find the minimum label to give the pixel
                 min_label = min(n for n in neighbors if n != 0)
                 labels[x-x_start, y-y_start] = min_label
 
+                #process equivalences and resolve unions
                 for n in neighbors:
                     if n != 0 and n != min_label:
                         process_union(equivalences, n, min_label)
@@ -110,9 +114,11 @@ def label_2d_block(BW, block, conn):
     #SECOND PASS
     for x in range(x_start, x_end +1):
         for y in range(y_start, y_end +1):
+            #resolves equivalences
             if labels[x-x_start, y-y_start] != 0 and labels[x-x_start, y-y_start] in equivalences:
                 labels[x-x_start, y-y_start] = find_root_label(equivalences, labels[x-x_start, y-y_start])
 
+    #update block with labels and borders
     new_block = {
         'coord_start': (x_start, y_start),
         'coord_end': (x_end, y_end),
@@ -126,18 +132,19 @@ def label_2d_block(BW, block, conn):
     return new_block
 
 def process_union(equivalences, label1, label2):
+    #creates a chain between the two labels in equivalences for later processing
     root1 = find_root_label(equivalences, label1)
     root2 = find_root_label(equivalences, label2)
     if root1 != root2:
         equivalences[max(root1, root2)] = min(root1, root2)
 
 def find_root_label(equivalences, label):
-    #find root label
+    #find root label to find true component
     root = label
     while root in equivalences:
         root = equivalences[root]
 
-    #path compression
+    #path compression, changes others to root so is faster in later runs
     while label != root:
         parent = equivalences[label]
         equivalences[label] = root
@@ -145,19 +152,23 @@ def find_root_label(equivalences, label):
 
     return root
 
-#change to work with multiple cpus (multiprocessing)
 def process_2d_equivalences(line, conn, equivalences):
 
+    #gets line info
     first_half, second_half = line[0], line[1]
 
+    #search extend is the maximum distance to search for equivalences, works for 4 and 8 connectivity
     search_extend = abs(1 - len(conn) // 4)
 
     for base in range(len(first_half)):
+        #offset can be 0 for conn4, or -1, 0, 1 for conn8
         for offset in range(0-search_extend, search_extend+1):
+            
             extend = base + offset
             if extend < 0 or extend >= len(first_half):
                 continue
 
+            #if both labels are not zero, process union, since they connect
             if first_half[base] != 0 and second_half[extend] != 0:
                 process_union(equivalences, first_half[base], second_half[extend])
 
@@ -170,6 +181,7 @@ def get_central_line_labels(blocks, num_rows, num_cols):
         line_labels_left = []
         line_labels_right = []
         for i in range(num_rows):
+            #appends the border information
             line_labels_left.extend(blocks[i][j]['border_right'])
             line_labels_right.extend(blocks[i][j+1]['border_left'])        
         
@@ -181,6 +193,7 @@ def get_central_line_labels(blocks, num_rows, num_cols):
         line_labels_top = []
         line_labels_bottom = []
         for j in range(num_cols):
+            #appends the border information
             line_labels_top.extend(blocks[i][j]['border_bottom'])
             line_labels_bottom.extend(blocks[i+1][j]['border_top'])    
         
@@ -193,15 +206,18 @@ def get_central_line_labels(blocks, num_rows, num_cols):
 
 def merge_2d_blocks(BW, block, equivalances):
 
+    #coords for the block
     x_start, y_start = block['coord_start']
     x_end, y_end = block['coord_end']
 
     for x in range(x_start, x_end +1):
         for y in range(y_start, y_end +1):
+            #finds the label and checks if it is in the equivalences
             label = block['labels'][x-x_start, y-y_start]
             if label != 0 and label in equivalances:
                 label = find_root_label(equivalances, label)
             
+            #assigns the label to the new image officially
             BW[x, y] = label
 
 
@@ -211,9 +227,8 @@ def bwconncomp(BW = None, conn = 4, cores = 1):
     Accepts # cores that are a power of 2
     Careful with allocated cores
     Handles 2D images only
-
     """
-
+    #does bit manipulation to check if cores is a power of 2
     if not ((cores & (cores-1) == 0) and cores > 0):
         raise ValueError("Number of cores must be a power of 2")
     
@@ -241,10 +256,10 @@ def bwconncomp(BW = None, conn = 4, cores = 1):
         # else: # conn = 26
         #     M = conn26
 
-
-    #change to work with multiple cpus (multiprocessing)
+    #uses multiprocessing
     pool = mp.Pool(cores)
 
+    #label blocks
     args = [(BW, block, M) for block in blocks]
     blocks = pool.starmap(label_2d_block, args)
 
@@ -257,9 +272,10 @@ def bwconncomp(BW = None, conn = 4, cores = 1):
         for col in range(num_cols):
             grid_blocks[row][col] = blocks[row*num_cols + col]
 
-    #figure out global equivalences for merging
+    #get central line labels for merging, they are the central lines that run through the image to create the blocks
     line_labels = get_central_line_labels(grid_blocks, num_rows, num_cols)
 
+    #figure out global equivalences for merging
     global_equivalences = {}
     for line in line_labels:
         process_2d_equivalences(line, M, global_equivalences)
@@ -272,6 +288,7 @@ def bwconncomp(BW = None, conn = 4, cores = 1):
     for block in blocks:
         args.append((new_BW, block, global_equivalences))
             
+    #merge the blocks
     pool.starmap(merge_2d_blocks, args)
 
     pool.close()
@@ -288,11 +305,12 @@ def bwconncomp(BW = None, conn = 4, cores = 1):
     numObjects = 0
     pixelIdxList = {}
 
-    #change to work with multiple cpus (multiprocessing)
+    #creates the pixelIdxList
     for x in range(width):
         for y in range(height):
             pixel = BW[x, y]
             if pixel != 0:
+                #if new component, add to the list
                 if pixel not in pixelIdxList:
                     pixelIdxList[pixel] = []
                     numObjects += 1
