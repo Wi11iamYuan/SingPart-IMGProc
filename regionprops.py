@@ -11,9 +11,9 @@ from bw_2d_gen import gen_RNG_2dBW
 
 
 
-def regionprops(image, properties=None, output_format='struct'):
+def regionprops(CC, properties=None, output_format='struct'):
     """
-    Accepts binary image (BW) or CC (connected components)
+    Accepts a CC (connected components)
 
     Accepts properties as a list of strings, if none, all properties are calculated
     - Area, number of pixels in the region
@@ -25,6 +25,14 @@ def regionprops(image, properties=None, output_format='struct'):
     - Table, table
 
     """
+    width = CC["ImageSize"][0]
+    height = CC["ImageSize"][1]
+    num_regions = CC["NumObjects"]
+    regions = CC["PixelIdxList"]
+
+    for region in regions:
+        pass
+
 
     region_props = {}
 
